@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# Define the height of the status bar on the primary monitor
+STATUS_BAR_HEIGHT=10  # Adjust this value to match your setup
+
+# Get active window ID
+ACTIVE_WIN=$(xdotool getactivewindow)
+
+# Get window geometry
+eval $(xdotool getwindowgeometry --shell $ACTIVE_WIN)
+WIN_CENTER_X=$((X + WIDTH / 2))
+WIN_CENTER_Y=$((Y + HEIGHT / 2))
+
+# Get window frame extents
+FRAME_EXTENTS=$(xprop -id $ACTIVE_WIN _NET_FRAME_EXTENTS | awk -F' = ' '{print $2}' | tr -d ,)
+LEFT=$(echo $FRAME_EXTENTS | cut -d' ' -f1)
+RIGHT=$(echo $FRAME_EXTENTS | cut -d' ' -f2)
+TOP=$(echo $FRAME_EXTENTS | cut -d' ' -f3)
+BOTTOM=$(echo $FRAME_EXTENTS | cut -d' ' -f4)
+
+# Get monitor dimensions containing the window's center
+SCREEN=$(xrandr --current | grep -oP "\d+x\d+\+\d+\+\d+" | while read RES; do
+    SCREEN_WIDTH=$(echo $RES | cut -d'x' -f1)
+    SCREEN_HEIGHT=$(echo $RES | cut -d'x' -f2 | cut -d'+' -f1)
+    SCREEN_X=$(echo $RES | cut -d'+' -f2)
+    SCREEN_Y=$(echo $RES | cut -d'+' -f3)
+
+    if ((WIN_CENTER_X >= SCREEN_X && WIN_CENTER_X < SCREEN_X + SCREEN_WIDTH && WIN_CENTER_Y >= SCREEN_Y && WIN_CENTER_Y < SCREEN_Y + SCREEN_HEIGHT)); then
+        echo $SCREEN_WIDTH $SCREEN_HEIGHT $SCREEN_X $SCREEN_Y
+        break
+    fi
+done)
+
+SCREEN_WIDTH=$(echo $SCREEN | cut -d' ' -f1)
+SCREEN_HEIGHT=$(echo $SCREEN | cut -d' ' -f2)
+SCREEN_X=$(echo $SCREEN | cut -d' ' -f3)
+SCREEN_Y=$(echo $SCREEN | cut -d' ' -f4)
+
+# Adjust for status bar on the primary monitor
+if ((SCREEN_X == 0 && SCREEN_Y == 0)); then
+    SCREEN_HEIGHT=$((SCREEN_HEIGHT - STATUS_BAR_HEIGHT))
+fi
+
+# Adjust for title bar and borders
+NEW_HEIGHT=$((SCREEN_HEIGHT - TOP - BOTTOM))
+
+# Calculate new dimensions (66% width, full height)
+NEW_WIDTH=$((2 * SCREEN_WIDTH / 3))
+
+# Calculate new position to maintain original center
+NEW_X=$((WIN_CENTER_X - NEW_WIDTH / 2 - LEFT))
+NEW_Y=0
+
+# Ensure the window doesn't exceed screen boundaries
+if ((NEW_X < SCREEN_X)); then
+    NEW_X=$SCREEN_X
+elif ((NEW_X + NEW_WIDTH > SCREEN_X + SCREEN_WIDTH)); then
+    NEW_X=$((SCREEN_X + SCREEN_WIDTH - NEW_WIDTH))
+fi
+
+# Resize and move the window
+wmctrl -ir $ACTIVE_WIN -e 0,$NEW_X,$NEW_Y,$NEW_WIDTH,$NEW_HEIGHT
