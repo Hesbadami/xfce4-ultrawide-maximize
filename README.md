@@ -13,8 +13,5 @@ A simple shell script useful for users with ultra-wide monitors who find the def
 
 ### Usage:
 1. Make the script executable:
-```sh
-chmod +x widemaximize
-```
 2. Move to PATH
 3. Assign a suitable keyboard shortcut such as `Super+F`
