@@ -1,4 +1,4 @@
-A simple shell script useful for users with ultra-wide monitors who find the default maximize behavior too wide.
+A simple shell script useful for xfce users on linux with ultra-wide monitors who find the default maximize behavior too wide. Inspired by how OS X maximize works for windows like Safari.
 
 ### The script:
 * Resizes the active window to 60% of the screen width>
